@@ -1,0 +1,41 @@
+import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+
+# Load the dataset
+df = pd.read_csv("final_5000.csv")
+
+# Discretize numerical columns into categorical bins
+bins = {
+    "PM2.5": [0, 12, 35, 55, 150, float("inf")],
+    "PM10": [0, 54, 154, 254, 354, float("inf")],
+    "NO2": [0, 53, 100, 360, float("inf")],
+    "SO2": [0, 35, 75, 185, float("inf")],
+    "CO": [0, 4.4, 9.4, 12.4, float("inf")],
+}
+
+labels = {
+    "PM2.5": ["Good", "Moderate", "Unhealthy_Sensitive", "Unhealthy", "Very_Unhealthy"],
+    "PM10": ["Good", "Moderate", "Unhealthy_Sensitive", "Unhealthy", "Very_Unhealthy"],
+    "NO2": ["Good", "Moderate", "Unhealthy", "Very_Unhealthy"],
+    "SO2": ["Good", "Moderate", "Unhealthy", "Very_Unhealthy"],
+    "CO": ["Good", "Moderate", "Unhealthy", "Very_Unhealthy"],
+}
+
+# Apply binning
+for col in bins:
+    df[col] = pd.cut(df[col], bins=bins[col], labels=labels[col])
+
+# Convert categorical data into one-hot encoding
+df_encoded = pd.get_dummies(df[["PM2.5", "PM10", "NO2", "SO2", "CO", "AQI Category"]])
+
+# Apply Apriori algorithm
+frequent_itemsets = apriori(df_encoded, min_support=0.09, use_colnames=True)
+
+# Generate association rules to calculate confidence
+rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.0)
+
+# Select only the frequent itemsets with confidence
+result = rules[['antecedents', 'consequents', 'support', 'confidence']].sort_values(by="support", ascending=False)
+
+# Display results
+print(result.head(20))

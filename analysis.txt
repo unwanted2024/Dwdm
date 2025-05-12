@@ -1,0 +1,56 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+
+# Load dataset
+df = pd.read_csv("C://Users/kritt/Downloads/dwdm lab1/final_5000.csv")
+df.columns = df.columns.str.strip()
+
+# Features and target
+features = ["Temperature", "Humidity", "PM2.5", "PM10", "NO2", "SO2", "CO", 
+            "Proximity_to_Industrial_Areas", "Population_Density", "AQI Value"]
+target = "AQI Category"
+
+# Fill missing values
+df.fillna(df.median(numeric_only=True), inplace=True)
+
+# Encode target
+label_encoder = LabelEncoder()
+df[target] = label_encoder.fit_transform(df[target])
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(df[features], df[target], test_size=0.2, random_state=42)
+
+# Classifier dictionary
+models = {
+    "Decision Tree": DecisionTreeClassifier(criterion="entropy", max_depth=5, random_state=42),
+    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
+    "SVM": SVC(kernel="linear", random_state=42),
+    "Naive Bayes": GaussianNB(),
+    "KNN": KNeighborsClassifier(n_neighbors=5)
+}
+
+# Train and evaluate models
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    print(f"\n{name} Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+    print(f"{name} Classification Report:\n{classification_report(y_test, y_pred)}")
+
+# Decision Tree visualization
+plt.figure(figsize=(20, 12))
+plot_tree(models["Decision Tree"], feature_names=features, class_names=label_encoder.classes_,
+          filled=True, rounded=True, fontsize=10, proportion=True)
+plt.title("Decision Tree for Air Pollution Classification", fontsize=14)
+plt.savefig("C://Users/kritt/Downloads/dwdm lab1/air_pollution_decision_tree.png", dpi=300, bbox_inches="tight")
+plt.show()
+
+print("\nDecision Tree saved as 'air_pollution_decision_tree.png'")
